@@ -67,15 +67,14 @@ async function onSubmit(event) {
 
   try {
     const {
-      data: { results, total },
+      data: { results, total, total_pages },
     } = await getPhotos(query, page);
     listEl.innerHTML = createMarkup(results);
     iziToast.success({
       position: 'topRight',
       message: `We found ${total} photos`,
     });
-    const item = document.querySelector('.gallery__item:last-child');
-    observer.observe(item);
+    hasMorePhotos(total_pages);
   } catch (error) {
     console.log('Error');
   } finally {
@@ -125,14 +124,25 @@ async function loadMoreData() {
 
   try {
     const {
-      data: { results, total_page },
+      data: { results, total_pages },
     } = await getPhotos(query, page);
     listEl.insertAdjacentHTML('beforeend', createMarkup(results));
-    const item = document.querySelector('.gallery__item:last-child');
-    observer.observe(item);
+    hasMorePhotos(total_pages);
   } catch (error) {
     console.log(error);
   } finally {
     spinnerStop();
+  }
+}
+
+function hasMorePhotos(totalPages) {
+  if (page < totalPages) {
+    const item = document.querySelector('.gallery__item:last-child');
+    observer.observe(item);
+  } else {
+    iziToast.info({
+      position: 'topRight',
+      message: `We're sorry, but you've reached the end of search results.`,
+    });
   }
 }
