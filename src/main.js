@@ -2,6 +2,40 @@
 
 import axios from 'axios';
 
+const formEl = document.querySelector(".js-search-form");
+const listEl = document.querySelector(".js-gallery");
+const page = 1;
+
+formEl.addEventListener("submit", onSubmit)
+
+async function onSubmit(event) {
+  event.preventDefault();
+  const query = event.target.elements["user-search-query"].value.trim();
+
+  if (!query) {
+    return alert("Error enter any symbols")
+  }
+
+
+  try {
+    const {data: {results, total}} = await getPhotos(query, page)
+    listEl.innerHTML = createMarkup(results);
+    alert(`We found ${total} photos`)
+ 
+  } catch (error) {
+    console.log("Error");
+  }
+  
+
+
+}
+
+function createMarkup(arr=[]) {
+  return arr.map(photo => `<li class='gallery__item'>
+  <img src='${photo.urls.small}' alt='${photo.alt_description}' class='gallery-img' />
+</li>`).join("")
+}
+
 function getPhotos(query, page) {
   axios.defaults.baseURL = 'https://api.unsplash.com';
   axios.defaults.headers.common['Authorization'] =
@@ -16,3 +50,4 @@ function getPhotos(query, page) {
     },
   });
 }
+
