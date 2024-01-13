@@ -8,7 +8,8 @@ import 'izitoast/dist/css/iziToast.min.css';
 const formEl = document.querySelector('.js-search-form');
 const listEl = document.querySelector('.js-gallery');
 const target = document.querySelector('.js-backdrop');
-const page = 1;
+let page = 1;
+let query;
 
 const opts = {
   lines: 14, // The number of lines to draw
@@ -30,16 +31,34 @@ const opts = {
   className: 'spinner', // The CSS class to assign to the spinner
   position: 'absolute', // Element positioning
 };
+
+const options = {
+  root: null,
+  rootMargin: '100px',
+  threshold: 1.0,
+};
+
+const callback = function (entries, observer) {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      observer.unobserve(entry.target);
+      loadMoreData();
+    }
+  });
+};
+
+const observer = new IntersectionObserver(callback, options);
 const spinner = new Spinner(opts);
 
 formEl.addEventListener('submit', onSubmit);
 
 async function onSubmit(event) {
   event.preventDefault();
-  const query = event.target.elements['user-search-query'].value.trim();
+  query = event.target.elements['user-search-query'].value.trim();
   spinnerPlay();
   if (!query) {
     spinnerStop();
+    listEl.innerHTML = '';
     return iziToast.info({
       position: 'topRight',
       message: 'Error enter any symbols',
@@ -55,11 +74,14 @@ async function onSubmit(event) {
       position: 'topRight',
       message: `We found ${total} photos`,
     });
+    const item = document.querySelector('.gallery__item:last-child');
+    observer.observe(item);
   } catch (error) {
     console.log('Error');
   } finally {
     spinnerStop();
   }
+  event.target.reset();
 }
 
 function spinnerPlay() {
@@ -94,4 +116,23 @@ function getPhotos(query, page) {
       orientation: 'portrait',
     },
   });
+}
+
+async function loadMoreData() {
+  console.log('LOAD');
+  page += 1;
+  spinnerPlay();
+
+  try {
+    const {
+      data: { results, total_page },
+    } = await getPhotos(query, page);
+    listEl.insertAdjacentHTML('beforeend', createMarkup(results));
+    const item = document.querySelector('.gallery__item:last-child');
+    observer.observe(item);
+  } catch (error) {
+    console.log(error);
+  } finally {
+    spinnerStop();
+  }
 }
